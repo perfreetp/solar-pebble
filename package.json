@@ -1,0 +1,23 @@
+{
+  "name": "tidal-creek-network-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "潮沟网络生成器 — 面向海岸带调查队的程序式潮沟网络建模与归档工具",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/serve.mjs",
+    "start": "node scripts/build.mjs && node scripts/serve.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/build-core.mjs && node --test tests/core.test.mjs",
+    "e2e": "node scripts/build.mjs && node tests/e2e.mjs",
+    "check": "npm run typecheck && npm run build-core && npm test && npm run e2e",
+    "build-core": "node scripts/build-core.mjs"
+  },
+  "devDependencies": {
+    "@webgpu/types": "^0.1.66",
+    "esbuild": "^0.28.2",
+    "playwright-core": "^1.56.1",
+    "typescript": "^5.9.3"
+  }
+}
