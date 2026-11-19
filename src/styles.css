@@ -1,0 +1,112 @@
+:root {
+  --bg: #eef1f6;
+  --panel: #ffffff;
+  --ink: #1f2937;
+  --muted: #6b7280;
+  --line: #d8dee9;
+  --blue: #2563eb;
+  --blue-soft: #dbeafe;
+  --green: #16a34a;
+  --amber: #d97706;
+  --red: #dc2626;
+  --red-soft: #fee2e2;
+  --shadow: 0 1px 3px rgba(15, 23, 42, .08), 0 4px 14px rgba(15, 23, 42, .06);
+}
+
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13.5px;
+}
+
+.app-shell { display: flex; flex-direction: column; height: 100%; }
+.topbar {
+  display: flex; align-items: center; gap: 24px;
+  background: #16233b; color: #e8edf6;
+  padding: 0 18px; height: 52px; flex: none;
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: .5px; }
+.brand-mark { color: #7dd3fc; font-size: 20px; }
+.nav { display: flex; gap: 4px; flex: 1; }
+.nav a {
+  color: #c3cddd; text-decoration: none; padding: 7px 13px; border-radius: 7px;
+  font-weight: 500;
+}
+.nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
+.nav a.router-link-active { background: #2b4470; color: #fff; }
+.role-switch { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.role-label { color: #93a3bd; }
+.role-switch select {
+  background: #22344f; color: #e8edf6; border: 1px solid #3a537e;
+  border-radius: 6px; padding: 5px 8px;
+}
+.role-user { color: #7dd3fc; }
+
+.page { flex: 1; min-height: 0; overflow: auto; padding: 16px; }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: var(--shadow);
+}
+.panel-title {
+  font-weight: 700; padding: 11px 14px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-body { padding: 14px; }
+
+button {
+  font: inherit; cursor: pointer; border-radius: 7px;
+  border: 1px solid var(--line); background: #fff; color: var(--ink);
+  padding: 6px 13px; font-weight: 500;
+}
+button:hover { border-color: var(--blue); color: var(--blue); }
+button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+button.primary:hover { background: #1d4ed8; color: #fff; }
+button.danger { color: var(--red); border-color: #fca5a5; }
+button.danger:hover { background: var(--red-soft); }
+button.ghost { border-color: transparent; background: transparent; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+
+input, select, textarea {
+  font: inherit; border: 1px solid var(--line); border-radius: 7px;
+  padding: 6px 9px; background: #fff; color: var(--ink); width: 100%;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--blue-soft); border-color: var(--blue); }
+label.field { display: block; margin-bottom: 10px; }
+label.field > span { display: block; color: var(--muted); margin-bottom: 4px; font-size: 12px; }
+.row { display: flex; gap: 10px; align-items: center; }
+.muted { color: var(--muted); }
+.tag {
+  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+}
+.tag.gray { background: #eef1f6; color: #475569; }
+.tag.blue { background: var(--blue-soft); color: var(--blue); }
+.tag.amber { background: #fef3c7; color: var(--amber); }
+.tag.green { background: #dcfce7; color: var(--green); }
+.tag.red { background: var(--red-soft); color: var(--red); }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-size: 12px; font-weight: 600; background: #f8fafc; }
+
+.canvas-wrap { position: relative; }
+canvas.editor { display: block; border-radius: 8px; cursor: crosshair; touch-action: none; }
+
+.toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: #111827; color: #fff; padding: 10px 18px; border-radius: 8px;
+  z-index: 50; box-shadow: var(--shadow); max-width: 70%;
+}
+.toast.err { background: #991b1b; }
+
+.num-input { display: flex; align-items: center; gap: 6px; }
+.num-input input { text-align: right; }
+.num-input unit { color: var(--muted); }
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #c7cfdd; border-radius: 6px; border: 2px solid var(--bg); }
