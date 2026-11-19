@@ -1,0 +1,31 @@
+{
+  "name": "kd-bed-layout-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "拆装式钢管床架三维布置工作台 — SolidJS + PixiJS 等轴测编辑器，含版本评审与客户只读分享",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c cyan,green \"tsx watch server/index.ts\" \"vite\"",
+    "dev:api": "tsx watch server/index.ts",
+    "dev:web": "vite",
+    "build": "vite build",
+    "start": "tsx server/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "pixi.js": "^8.23.0",
+    "solid-js": "^1.9.19"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.19.2",
+    "concurrently": "^10.0.7",
+    "playwright-core": "^1.57.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.8",
+    "vite-plugin-solid": "^2.11.17"
+  }
+}

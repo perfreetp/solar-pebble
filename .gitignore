@@ -16,3 +16,13 @@ node_modules/
 __pycache__/
 .venv/
 venv/
+
+# app runtime data
+data/
+dist/
+shots/
+*.log
+
+# local test harness (not part of the deliverable)
+_pw.mjs
+_*.mjs
