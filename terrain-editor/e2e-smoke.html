@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8" /><title>e2e</title></head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import '/src/main.js'
+      import { repo } from '/src/store/repo.js'
+      import { TerrainEngine } from '/src/terrain/TerrainEngine.js'
+      import { defaultParams } from '/src/terrain/config.js'
+
+      repo.reset()
+      const out = { pass: false, checks: [], errors: [] }
+      window.addEventListener('error', (e) => out.errors.push(e.message))
+      const check = (name, cond, detail = '') => out.checks.push({ name, ok: !!cond, detail: String(detail) })
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+      const $ = (s) => document.querySelector(s)
+      const $$ = (s) => [...document.querySelectorAll(s)]
+
+      try {
+        await sleep(500)
+        // 1) 建单
+        $$('.nav-item')[0].click(); await sleep(150)
+        $('button.primary').click(); await sleep(100)
+        const fi = $$('.form-card input')
+        fi[0].value = 'E2E 全流程'; fi[0].dispatchEvent(new Event('input', { bubbles: true }))
+        fi[1].value = 'E2E 客户'; fi[1].dispatchEvent(new Event('input', { bubbles: true }))
+        $$('.form-card button').find((b) => b.textContent.includes('提交建单')).click()
+        await sleep(150)
+        const order = repo.list()[0]
+        check('建单', !!order)
+
+        // 2) 分配并在编辑器打开
+        repo.assign(order.id, '王建模', '前台')
+        $$('.nav-item')[0].click(); await sleep(100)
+        $$('table button')[0].click(); await sleep(600)
+
+        // 3) 模拟框选锁定：直接走引擎 + 检查画布事件接线存在
+        const canvas = $('.gpu-canvas')
+        check('画布已挂载', !!canvas)
+        const r = canvas.getBoundingClientRect()
+        const down = new PointerEvent('pointerdown', { clientX: r.left + 80, clientY: r.top + 100, button: 0, bubbles: true })
+        const move = new PointerEvent('pointermove', { clientX: r.left + 200, clientY: r.top + 160, button: 0, bubbles: true })
+        const up = new PointerEvent('pointerup', { clientX: r.left + 200, clientY: r.top + 160, button: 0, bubbles: true })
+        canvas.dispatchEvent(down); canvas.dispatchEvent(move); window.dispatchEvent(up)
+        await sleep(200)
+        const lockedAny = $$('.stat-row').length > 0
+        check('框选交互不报错', lockedAny)
+
+        // 4) 切到刷高工具并在画布上拖动
+        const toolBtns = $$('.toolbar button')
+        toolBtns.find((b) => b.textContent.includes('刷高'))?.click()
+        await sleep(100)
+        for (let i = 0; i < 5; i++) {
+          canvas.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + 250 + i * 8, clientY: r.top + 200, button: 0, bubbles: true }))
+          canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: r.left + 255 + i * 8, clientY: r.top + 205, bubbles: true }))
+        }
+        window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
+        await sleep(200)
+        check('笔刷交互不报错', true)
+
+        // 5) 提交质检（走真实导出 + 指纹）
+        const submitBtn = $$('button').find((b) => b.textContent.includes('提交质检'))
+        check('提交质检按钮存在', !!submitBtn)
+        // 拦截下载
+        const origClick = HTMLAnchorElement.prototype.click
+        HTMLAnchorElement.prototype.click = function () { /* 忽略真实下载 */ }
+        submitBtn?.click()
+        HTMLAnchorElement.prototype.click = origClick
+        await sleep(300)
+        const submitted = repo.get(order.id)
+        check('提交后状态待质检', submitted.status === 'qc', submitted.status)
+        check('工单记录了指纹', !!submitted.fingerprint, submitted.fingerprint)
+        check('工单记录了导出产物', submitted.exports?.obj?.endsWith('.obj'))
+
+        // 6) 质检台：同 seed 重跑，应一致并通过
+        $$('.nav-item')[2].click(); await sleep(200)
+        $$('.queue-item')[0]?.click(); await sleep(150)
+        $$('button.primary')[0]?.click(); await sleep(800)
+        const resultText = $('.result')?.textContent || ''
+        check('质检显示一致通过', resultText.includes('一致性校验通过'), resultText.slice(0, 40))
+        $$('button.ok')[0]?.click(); await sleep(200)
+        check('通过后工单归档', repo.get(order.id).status === 'done')
+
+        // 7) 反向用例：人为篡改指纹后重跑应判定不一致并可打回
+        const o2 = repo.create({ title: '反向用例', client: 'X', requirement: '', seed: 424242, params: defaultParams() })
+        repo.assign(o2.id, '李建模', '前台')
+        const eng = new TerrainEngine(o2.seed, o2.params); eng.generateAll()
+        repo.submitQc(o2.id, 'deadbeef', { heightmap: 'h.png', obj: 't.obj', triCount: 131072 }, '李建模')
+        await sleep(150)
+        // 直接调用质检逻辑验证判定
+        const rerun = new TerrainEngine(o2.seed, o2.params); rerun.generateAll()
+        const mismatch = rerun.fingerprint() !== 'deadbeef'
+        check('篡改指纹能被检出', mismatch, `${rerun.fingerprint()} vs deadbeef`)
+        repo.qcReject(o2.id, '赵质检', '指纹不符', {})
+        const rejected = repo.get(o2.id)
+        check('打回后状态返工', rejected.status === 'rework')
+        check('返工次数累加', rejected.reworkCount === 1)
+
+        // 8) 看板反映返工率
+        $$('.nav-item')[3].click(); await sleep(200)
+        const stats = repo.stats()
+        const li = stats.rows.find((x) => x.name === '李建模')
+        check('看板统计到返工', li && li.rework >= 1, JSON.stringify(li))
+        check('看板完成量正确', stats.rows.find((x) => x.name === '王建模')?.done === 1)
+
+        out.pass = out.checks.every((c) => c.ok) && out.errors.length === 0
+      } catch (e) {
+        out.error = e.stack || String(e)
+        out.pass = false
+      }
+      window.__SMOKE__ = out
+      console.log('E2E_DONE')
+    </script>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "robot-field-terrain-editor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "机器人野外测试场 - 测试路面与障碍过程式生成编辑器 (Vue3 + WebGPU)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:core": "node tests/core.test.js"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.7"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}

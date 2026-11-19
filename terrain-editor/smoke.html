@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8" /><title>smoke</title></head>
+  <body>
+    <canvas id="c" width="640" height="480"></canvas>
+    <script type="module">
+      import { TerrainEngine } from '/src/terrain/TerrainEngine.js'
+      import { defaultParams } from '/src/terrain/config.js'
+      import { initWebGPU } from '/src/render/gpu-device.js'
+      import { TerrainRenderer } from '/src/render/TerrainRenderer.js'
+
+      const out = { pass: false, checks: [], logs: [] }
+      const check = (name, cond, detail = '') => out.checks.push({ name, ok: !!cond, detail: String(detail) })
+
+      try {
+        // 1) 确定性
+        const a = new TerrainEngine(20261120, defaultParams())
+        const b = new TerrainEngine(20261120, defaultParams())
+        a.generateAll(); b.generateAll()
+        check('同 seed 确定性', a.fingerprint() === b.fingerprint(), a.fingerprint())
+
+        // 2) 增量重算
+        const before = a.fingerprint()
+        const res = a.updateParams({ ...a.params, rubbleDensity: 40 })
+        check('增量重算仅动部分区块', res.regenerated.length > 0 && res.regenerated.length < 64,
+          `regen=${res.regenerated.length} locked=${res.skippedLocked.length}`)
+        check('参数变化后指纹改变', a.fingerprint() !== before)
+
+        // 3) 锁定与笔刷
+        a.applyBrush('raise', 0, 0, 1.2, 0.2)
+        check('笔刷自动锁定', a.chunkAtWorld(0, 0).locked)
+
+        // 4) 导出
+        const png = a.exportHeightPng()
+        const obj = a.exportObj()
+        check('PNG/OBJ 导出', png.blob.size > 1000 && obj.size > 1_000_000, `png=${png.blob.size} obj=${obj.size}`)
+
+        // 5) WebGPU 初始化 + 渲染管线 + 首帧
+        const gpu = await initWebGPU()
+        check('WebGPU 可用', gpu.ok, gpu.reason || gpu.info || '')
+        if (gpu.ok) {
+          const engine = new TerrainEngine(777, defaultParams())
+          engine.generateAll()
+          const renderer = new TerrainRenderer(document.getElementById('c'), engine, gpu.device)
+          renderer.frame() // 同步录制并提交一帧，管线/WGSL 错误会在这里抛出
+          await new Promise((r) => setTimeout(r, 300))
+          renderer.frame()
+          check('WebGPU 首帧渲染', true, `${renderer.vtxCount} 索引顶点`)
+          check('覆盖线构建', renderer.lineVerts > 0, `lineVerts=${renderer.lineVerts}`)
+        }
+        out.pass = out.checks.every((c) => c.ok)
+      } catch (e) {
+        out.error = e.stack || String(e)
+        out.pass = false
+      }
+      window.__SMOKE__ = out
+      console.log('SMOKE_DONE', JSON.stringify(out))
+    </script>
+  </body>
+</html>

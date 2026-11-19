@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="UTF-8" /><title>app-smoke</title></head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import '/src/main.js'
+      import { repo } from '/src/store/repo.js'
+
+      const out = { pass: false, checks: [], errors: [] }
+      window.addEventListener('error', (e) => out.errors.push(e.message))
+      const check = (name, cond, detail = '') => out.checks.push({ name, ok: !!cond, detail: String(detail) })
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+      const $ = (sel) => document.querySelector(sel)
+      const $$ = (sel) => [...document.querySelectorAll(sel)]
+
+      try {
+        await sleep(600)
+        check('应用挂载', !!$('.app-shell'))
+        check('四个导航存在', $$('.nav-item').length === 4, $$('.nav-item').length)
+
+        // 切到编辑器
+        $$('.nav-item')[1].click()
+        await sleep(400)
+        check('编辑器渲染', !!$('.editor-page'))
+        check('画布存在', !!$('.gpu-canvas'))
+        check('参数滑杆 5 个', $$('input[type=range]').length >= 5)
+        const fp1 = $('.stat-row .mono')?.textContent
+        check('显示指纹', !!fp1, fp1)
+
+        // 切换线框/水面按钮不报错
+        const btns = $$('.toolbar button')
+        const wf = btns.find((b) => b.textContent.includes('线框'))
+        wf?.click()
+        await sleep(100)
+        check('线框切换', true)
+
+        // 切到质检页
+        $$('.nav-item')[2].click()
+        await sleep(200)
+        check('质检页渲染', !!$('.qc-page'))
+
+        // 切到看板
+        $$('.nav-item')[3].click()
+        await sleep(200)
+        check('看板渲染', !!$('.dash-page'))
+        const seedBtn = $$('button').find((b) => b.textContent.includes('灌入演示数据'))
+        seedBtn?.click()
+        await sleep(300)
+        const stats = repo.stats()
+        check('看板统计有建模员行', stats.rows.length >= 2, `rows=${stats.rows.length}`)
+        check('返工率数值合法', stats.rows.every((r) => r.reworkRate >= 0 && r.reworkRate <= 1))
+
+        // 回需求单建单 → 完整流程
+        $$('.nav-item')[0].click()
+        await sleep(200)
+        $('button.primary')?.click() // 新建需求单
+        await sleep(150)
+        const inputs = $$('.form-card input')
+        check('建单表单出现', inputs.length >= 2)
+        inputs[0].value = 'CDP 冒烟工单'
+        inputs[0].dispatchEvent(new Event('input', { bubbles: true }))
+        inputs[1].value = '冒烟客户'
+        inputs[1].dispatchEvent(new Event('input', { bubbles: true }))
+        const submit = $$('.form-card button').find((b) => b.textContent.includes('提交建单'))
+        submit?.click()
+        await sleep(200)
+        const orders = repo.list()
+        const order = orders[0]
+        check('工单已创建', !!order && order.title === 'CDP 冒烟工单', order?.id)
+        check('初始状态待分配', order.status === 'new')
+
+        // 分配
+        repo.assign(order.id, '王建模', '前台')
+        await sleep(150)
+        check('分配后状态建模中', repo.get(order.id).status === 'assigned')
+
+        out.pass = out.checks.every((c) => c.ok) && out.errors.length === 0
+      } catch (e) {
+        out.error = e.stack || String(e)
+        out.pass = false
+      }
+      window.__SMOKE__ = out
+      console.log('APP_SMOKE_DONE')
+    </script>
+  </body>
+</html>
