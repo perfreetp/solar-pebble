@@ -1,0 +1,24 @@
+import { chromium } from 'playwright-core';
+const [,, url] = process.argv;
+const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true, args: ['--enable-unsafe-webgpu','--enable-features=Vulkan'] });
+const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+const errors = [];
+page.on('pageerror', e => errors.push('PAGEERROR ' + e.message));
+page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE ' + m.text()); });
+await page.goto(url, { waitUntil: 'networkidle' });
+await page.waitForTimeout(2000);
+const backend = await page.evaluate(() => document.querySelector('.badge')?.textContent?.trim());
+const hasHook = await page.evaluate(() => !!window.__winglab);
+const cells = await page.evaluate(() => document.querySelectorAll('.preset-swatch').length);
+// exercise the UI without the dev hook: click a wing cell, then submit
+const cv = await page.locator('canvas').boundingBox();
+await page.mouse.click(cv.x + cv.width * 0.34, cv.y + cv.height * 0.44);
+await page.waitForTimeout(300);
+const sel = await page.evaluate(() => document.querySelector('.panel .head .kicker')?.textContent || 'none');
+await page.getByRole('button', { name: '进批次' }).first().click();
+await page.waitForTimeout(600);
+const inBatch = await page.locator('.batch').count();
+await page.screenshot({ path: 'tools/prod.png' });
+console.log(JSON.stringify({ backend, devHook: hasHook, selection: sel, batchView: inBatch > 0 }, null, 1));
+console.log(errors.join(' | ') || 'no errors');
+await browser.close();

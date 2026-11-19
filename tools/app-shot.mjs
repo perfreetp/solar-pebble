@@ -1,0 +1,12 @@
+import { chromium } from 'playwright-core';
+const [,, url, out, w, h] = process.argv;
+const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true, args: ['--enable-unsafe-webgpu','--enable-features=Vulkan'] });
+const page = await browser.newPage({ viewport: { width: +(w||1600), height: +(h||1000) }, deviceScaleFactor: 1 });
+const errors = [];
+page.on('console', m => { if (m.type()==='error') errors.push(m.text()); });
+page.on('pageerror', e => errors.push('PAGEERROR '+e.message));
+await page.goto(url, { waitUntil: 'networkidle' });
+await page.waitForTimeout(1400);
+await page.screenshot({ path: out });
+console.log(errors.slice(0,10).join('\n') || 'no errors');
+await browser.close();
