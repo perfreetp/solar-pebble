@@ -1,0 +1,31 @@
+{
+  "name": "lunar-lavatube-voxel-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "月球熔岩管地下基地体素概念建模与制单协作工具",
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB -c yellow,cyan \"node server/index.js --port=8788\" \"vite --port=5174\"",
+    "build": "vite build",
+    "start": "node server/index.js --port=8788 --serve",
+    "preview": "npm run build && npm run start",
+    "test": "node --test tests/kernel.test.mjs tests/editor.test.mjs tests/flow.test.mjs",
+    "test:ui": "node tests/smoke.mjs",
+    "test:all": "npm run test && npm run test:ui"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@fontsource-variable/space-grotesk": "5.3.0",
+    "express": "5.3.0",
+    "fflate": "0.8.3",
+    "lucide-vue-next": "1.0.0",
+    "vue": "3.5.45",
+    "vue-router": "4.6.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.11",
+    "concurrently": "9.2.1",
+    "playwright": "1.65.1",
+    "vite": "7.3.8"
+  }
+}

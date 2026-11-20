@@ -16,3 +16,9 @@ node_modules/
 __pycache__/
 .venv/
 venv/
+
+# 运行时数据与产物
+dist/
+.data/
+tests/shots/
+*.tmp
